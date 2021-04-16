@@ -1,0 +1,53 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib as mpl
+import numpy as np
+import seaborn as sns
+%matplotlib inline
+
+white_wine = pd.read_csv('winequality-white.csv', sep=';')
+red_wine = pd.read_csv('winequality-red.csv', sep=';')
+
+# store wine type as an attribute
+red_wine['wine_type'] = 'red'   
+white_wine['wine_type'] = 'white'
+
+# bucket wine quality scores into qualitative quality labels
+red_wine['quality_label'] = red_wine['quality'].apply(lambda value: 'low' 
+                                                          if value <= 5 else 'medium' 
+                                                              if value <= 7 else 'high')
+red_wine['quality_label'] = pd.Categorical(red_wine['quality_label'], 
+                                           categories=['low', 'medium', 'high'])
+white_wine['quality_label'] = white_wine['quality'].apply(lambda value: 'low' 
+                                                              if value <= 5 else 'medium' 
+                                                                  if value <= 7 else 'high')
+white_wine['quality_label'] = pd.Categorical(white_wine['quality_label'], 
+                                             categories=['low', 'medium', 'high'])
+
+# merge red and white wine datasets
+wines = pd.concat([red_wine, white_wine])
+
+# re-shuffle records just to randomize data points
+wines = wines.sample(frac=1, random_state=42).reset_index(drop=True)
+subset_attributes = ['residual sugar', 'total sulfur dioxide', 'sulphates', 
+                     'alcohol', 'volatile acidity', 'quality']
+rs = round(red_wine[subset_attributes].describe(),2)
+ws = round(white_wine[subset_attributes].describe(),2)
+
+pd.concat([rs, ws], axis=1, keys=['Red Wine Statistics', 'White Wine Statistics']) # headers
+fig = plt.figure(figsize=(8, 6))
+t = fig.suptitle('Wine Residual Sugar - Alcohol Content - Acidity - Type', fontsize=14)
+ax = fig.add_subplot(111, projection='3d')
+
+g = sns.FacetGrid(wines, col="wine_type", hue='quality_label', #bubble chart: hue, size, facets
+                  col_order=['red', 'white'], hue_order=['low', 'medium', 'high'],
+                  aspect=1.2, size=3.5, palette=sns.light_palette('black', 4)[1:])
+g.map(plt.scatter, "residual sugar", "alcohol", alpha=0.8, 
+      edgecolor='white', linewidth=0.5, s=wines['total sulfur dioxide']*2)
+fig = g.fig 
+fig.subplots_adjust(top=0.8, wspace=0.3)
+fig.suptitle('Wine Type - Sulfur Dioxide - Residual Sugar - Alcohol - Quality', fontsize=14)
+l = g.add_legend(title='Wine Quality Class')
+
+wines.head()
