@@ -1,0 +1,57 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib as mpl
+import numpy as np
+import seaborn as sns
+%matplotlib inline
+
+white_wine = pd.read_csv('winequality-white.csv', sep=';')
+red_wine = pd.read_csv('winequality-red.csv', sep=';')
+
+# store wine type as an attribute
+red_wine['wine_type'] = 'red'   
+white_wine['wine_type'] = 'white'
+
+# bucket wine quality scores into qualitative quality labels
+red_wine['quality_label'] = red_wine['quality'].apply(lambda value: 'low' 
+                                                          if value <= 5 else 'medium' 
+                                                              if value <= 7 else 'high')
+red_wine['quality_label'] = pd.Categorical(red_wine['quality_label'], 
+                                           categories=['low', 'medium', 'high'])
+white_wine['quality_label'] = white_wine['quality'].apply(lambda value: 'low' 
+                                                              if value <= 5 else 'medium' 
+                                                                  if value <= 7 else 'high')
+white_wine['quality_label'] = pd.Categorical(white_wine['quality_label'], 
+                                             categories=['low', 'medium', 'high'])
+
+# merge red and white wine datasets
+wines = pd.concat([red_wine, white_wine])
+
+# re-shuffle records just to randomize data points
+wines = wines.sample(frac=1, random_state=42).reset_index(drop=True)
+subset_attributes = ['residual sugar', 'total sulfur dioxide', 'sulphates', 
+                     'alcohol', 'volatile acidity', 'quality']
+rs = round(red_wine[subset_attributes].describe(),2)
+ws = round(white_wine[subset_attributes].describe(),2)
+
+pd.concat([rs, ws], axis=1, keys=['Red Wine Statistics', 'White Wine Statistics']) # headers
+figure = plt.figure(figsize=(8, 6))
+t = figure.suptitle('Wine Residual Sugar - Alcohol Content - Acidity - Type', fontsize=14)
+axis = figure.add_subplot(111, projection='3d')
+
+xs = list(wines['residual sugar'])                                  ##scatterplot 4D: hue and facets
+ys = list(wines['alcohol'])
+zs = list(wines['fixed acidity'])
+data_points = [(x, y, z) for x, y, z in zip(xs, ys, zs)]
+colors = ['red' if wt == 'red' else 'yellow' for wt in list(wines['wine_type'])]
+
+for data, color in zip(data_points, colors):
+    x, y, z = data
+    axis.scatter(x, y, z, alpha=0.4, c=color, edgecolors='none', s=30)
+
+axis.set_xlabel('Residual Sugar')
+axis.set_ylabel('Alcohol')
+axis.set_zlabel('Fixed Acidity')
+
+wines.head()
